@@ -16,6 +16,7 @@ import { PagosModule } from './pagos/pagos.module';
 import { ResidentesModule } from './residentes/residentes.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { VisitasModule } from './visitas/visitas.module';
+import { SolicitudesModule } from './solicitudes/solicitudes.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { VisitasModule } from './visitas/visitas.module';
     MantenimientoModule,
     IncidentesModule,
     VisitasModule,
+    SolicitudesModule,
     AuditoriaModule,
     CommonModule,
     AppHealthModule,
