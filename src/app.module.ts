@@ -17,6 +17,7 @@ import { ResidentesModule } from './residentes/residentes.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { VisitasModule } from './visitas/visitas.module';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
+import { ListaEsperaModule } from './lista-espera/lista-espera.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SolicitudesModule } from './solicitudes/solicitudes.module';
     IncidentesModule,
     VisitasModule,
     SolicitudesModule,
+    ListaEsperaModule,
     AuditoriaModule,
     CommonModule,
     AppHealthModule,

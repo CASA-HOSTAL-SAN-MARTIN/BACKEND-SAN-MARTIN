@@ -144,9 +144,10 @@ Ejecuta el script de solicitudes antes de iniciar la API:
 
 ```bash
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/001_create_solicitudes.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/003_create_lista_espera.sql
 ```
 
-El script es idempotente y puede ejecutarse nuevamente sin duplicar la tabla.
+Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tablas.
 
 ### Scripts
 
