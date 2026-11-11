@@ -1,7 +1,7 @@
-import { AspirantesController } from '../src/aspirantes/aspirantes.controller';
-import { CreateAspiranteDto } from '../src/aspirantes/dto/create-aspirante.dto';
-import { UpdateAspiranteDto } from '../src/aspirantes/dto/update-aspirante.dto';
-import { AspirantesService } from '../src/aspirantes/aspirantes.service';
+import { AspirantesController } from '../../src/aspirantes/aspirantes.controller';
+import { CreateAspiranteDto } from '../../src/aspirantes/dto/create-aspirante.dto';
+import { UpdateAspiranteDto } from '../../src/aspirantes/dto/update-aspirante.dto';
+import { AspirantesService } from '../../src/aspirantes/aspirantes.service';
 
 describe('AspirantesController', () => {
   it('delegates creation, lookup, and update to the service', async () => {

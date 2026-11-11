@@ -1,9 +1,9 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { CreateSolicitudDto } from '../src/solicitudes/dto/create-solicitud.dto';
-import { EstadoSolicitud } from '../src/solicitudes/enums/estado-solicitud.enum';
-import { Solicitud } from '../src/solicitudes/entities/solicitud.entity';
-import { SolicitudesService } from '../src/solicitudes/solicitudes.service';
+import { CreateSolicitudDto } from '../../src/solicitudes/dto/create-solicitud.dto';
+import { EstadoSolicitud } from '../../src/solicitudes/enums/estado-solicitud.enum';
+import { Solicitud } from '../../src/solicitudes/entities/solicitud.entity';
+import { SolicitudesService } from '../../src/solicitudes/solicitudes.service';
 
 describe('SolicitudesService', () => {
   let service: SolicitudesService;

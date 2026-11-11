@@ -1,6 +1,6 @@
-import { SolicitudesController } from '../src/solicitudes/solicitudes.controller';
-import { Solicitud } from '../src/solicitudes/entities/solicitud.entity';
-import { SolicitudesService } from '../src/solicitudes/solicitudes.service';
+import { SolicitudesController } from '../../src/solicitudes/solicitudes.controller';
+import { Solicitud } from '../../src/solicitudes/entities/solicitud.entity';
+import { SolicitudesService } from '../../src/solicitudes/solicitudes.service';
 
 describe('SolicitudesController', () => {
   it('delegates creation and queries to the service', async () => {

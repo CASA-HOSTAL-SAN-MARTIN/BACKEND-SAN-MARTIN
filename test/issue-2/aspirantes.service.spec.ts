@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Aspirante } from '../src/aspirantes/entities/aspirante.entity';
-import { CreateAspiranteDto } from '../src/aspirantes/dto/create-aspirante.dto';
-import { AspirantesService } from '../src/aspirantes/aspirantes.service';
+import { Aspirante } from '../../src/aspirantes/entities/aspirante.entity';
+import { CreateAspiranteDto } from '../../src/aspirantes/dto/create-aspirante.dto';
+import { AspirantesService } from '../../src/aspirantes/aspirantes.service';
 
 describe('AspirantesService', () => {
   let service: AspirantesService;
