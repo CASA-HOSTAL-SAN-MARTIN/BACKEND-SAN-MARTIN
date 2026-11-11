@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS aspirantes (
+  id varchar(36) NOT NULL,
+  nombres varchar(100) NOT NULL,
+  apellidos varchar(100) NOT NULL,
+  numero_documento varchar(30) NOT NULL,
+  fecha_nacimiento date NOT NULL,
+  correo varchar(150) NOT NULL,
+  telefono varchar(30) NOT NULL,
+  direccion varchar(200) NOT NULL,
+  universidad varchar(150) NOT NULL,
+  programa_academico varchar(150) NOT NULL,
+  semestre tinyint unsigned NOT NULL,
+  estrato_socioeconomico tinyint unsigned NOT NULL,
+  ingresos_hogar_mensuales decimal(12, 2) NOT NULL,
+  personas_a_cargo tinyint unsigned NOT NULL,
+  solicita_beca boolean NOT NULL DEFAULT false,
+  created_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_aspirantes_numero_documento (numero_documento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
