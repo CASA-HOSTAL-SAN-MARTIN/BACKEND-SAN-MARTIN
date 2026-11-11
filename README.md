@@ -137,6 +137,17 @@ La API queda disponible en `http://localhost:3000` y la documentación en `http:
 
 > ⚠️ Nunca subas el archivo `.env` al repositorio.
 
+### Esquema inicial de base de datos
+
+La aplicación usa `synchronize: false` para evitar cambios automáticos en la base de datos.
+Ejecuta el script de solicitudes antes de iniciar la API:
+
+```bash
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/001_create_solicitudes.sql
+```
+
+El script es idempotente y puede ejecutarse nuevamente sin duplicar la tabla.
+
 ### Scripts
 
 | Comando | Acción |
