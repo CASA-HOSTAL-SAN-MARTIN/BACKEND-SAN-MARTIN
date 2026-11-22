@@ -144,7 +144,11 @@ Ejecuta el script de solicitudes antes de iniciar la API:
 
 ```bash
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/001_create_solicitudes.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/002_create_aspirantes.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/003_create_lista_espera.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/004_create_asignaciones_cama.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/005_create_contratos.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/006_create_pagos.sql
 ```
 
 Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tablas.
