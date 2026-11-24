@@ -19,6 +19,7 @@ import { VisitasModule } from './visitas/visitas.module';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
 import { ListaEsperaModule } from './lista-espera/lista-espera.module';
 import { AsignacionesModule } from './asignaciones/asignaciones.module';
+import { CamasModule } from './camas/camas.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AsignacionesModule } from './asignaciones/asignaciones.module';
     SolicitudesModule,
     ListaEsperaModule,
     AsignacionesModule,
+    CamasModule,
     AuditoriaModule,
     CommonModule,
     AppHealthModule,
