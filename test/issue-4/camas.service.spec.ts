@@ -1,5 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { AsignacionCama } from '../../src/asignaciones/entities/asignacion-cama.entity';
 import { Cama } from '../../src/camas/entities/cama.entity';
 import { CamasService } from '../../src/camas/camas.service';
 import { EstadoCama } from '../../src/camas/enums/estado-cama.enum';
@@ -9,6 +10,10 @@ describe('CamasService', () => {
   let repository: jest.Mocked<
     Pick<Repository<Cama>, 'find' | 'findOne' | 'save'>
   >;
+  let asignacionesRepository: jest.Mocked<
+    Pick<Repository<AsignacionCama>, 'findOne'>
+  >;
+  let dataSource: DataSource;
 
   beforeEach(() => {
     repository = {
@@ -16,7 +21,21 @@ describe('CamasService', () => {
       findOne: jest.fn(),
       save: jest.fn(),
     };
-    service = new CamasService(repository as unknown as Repository<Cama>);
+    asignacionesRepository = { findOne: jest.fn() };
+    const manager = {
+      getRepository: jest.fn((entity: unknown) => (
+        entity === Cama ? repository : asignacionesRepository
+      )),
+    } as unknown as EntityManager;
+    dataSource = {
+      transaction: jest.fn(async <T>(
+        runInTransaction: (manager: EntityManager) => Promise<T>,
+      ) => runInTransaction(manager)),
+    } as unknown as DataSource;
+    service = new CamasService(
+      repository as unknown as Repository<Cama>,
+      dataSource,
+    );
   });
 
   it('returns all beds with their rooms in stable order', async () => {
@@ -59,14 +78,36 @@ describe('CamasService', () => {
     const bed = { id: 'cama-01', estado: EstadoCama.DISPONIBLE } as Cama;
     repository.findOne.mockResolvedValue(bed);
     repository.save.mockResolvedValue({ ...bed, estado: EstadoCama.OCUPADO });
+    asignacionesRepository.findOne.mockResolvedValue(null);
 
     await expect(service.updateState('cama-01', EstadoCama.OCUPADO)).resolves.toEqual({
       ...bed,
       estado: EstadoCama.OCUPADO,
     });
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(repository.findOne).toHaveBeenCalledWith({
+      where: { id: 'cama-01' },
+      relations: { habitacion: true },
+      lock: { mode: 'pessimistic_write' },
+    });
     expect(repository.save).toHaveBeenCalledWith({
       ...bed,
       estado: EstadoCama.OCUPADO,
     });
+  });
+
+  it('does not make a bed with an active assignment available', async () => {
+    const bed = { id: 'cama-01', estado: EstadoCama.OCUPADO } as Cama;
+    repository.findOne.mockResolvedValue(bed);
+    asignacionesRepository.findOne.mockResolvedValue({
+      id: 'assignment-1',
+      camaId: 'cama-01',
+      fechaFinalizacion: null,
+    } as AsignacionCama);
+
+    await expect(
+      service.updateState('cama-01', EstadoCama.DISPONIBLE),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(repository.save).not.toHaveBeenCalled();
   });
 });

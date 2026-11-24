@@ -5,6 +5,7 @@ describe('AsignacionesController', () => {
   it('delegates assignment history queries to the service', async () => {
     const service = {
       create: jest.fn().mockResolvedValue({ id: 'assignment-1' }),
+      findOne: jest.fn().mockResolvedValue({ id: 'assignment-1' }),
       findAllHistory: jest.fn().mockResolvedValue([{ id: 'assignment-1' }]),
       findHistoryByBed: jest.fn().mockResolvedValue([{ id: 'assignment-1' }]),
     } as unknown as AsignacionesService;
@@ -12,9 +13,11 @@ describe('AsignacionesController', () => {
     const dto = { estudianteId: 'student-1', camaId: 'bed-1' };
 
     await expect(controller.create(dto)).resolves.toEqual({ id: 'assignment-1' });
+    await expect(controller.findOne('assignment-1')).resolves.toEqual({ id: 'assignment-1' });
     await expect(controller.findAllHistory()).resolves.toEqual([{ id: 'assignment-1' }]);
     await expect(controller.findHistoryByBed('bed-1')).resolves.toEqual([{ id: 'assignment-1' }]);
     expect(service.create).toHaveBeenCalledWith(dto);
+    expect(service.findOne).toHaveBeenCalledWith('assignment-1');
     expect(service.findAllHistory).toHaveBeenCalled();
     expect(service.findHistoryByBed).toHaveBeenCalledWith('bed-1');
   });
