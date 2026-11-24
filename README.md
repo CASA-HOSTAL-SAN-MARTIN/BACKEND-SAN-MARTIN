@@ -150,11 +150,14 @@ mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/004_cre
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/005_create_contratos.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/006_create_pagos.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/007_create_camas.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/008_enforce_single_active_assignment.sql
 ```
 
 Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tablas. El script `007_create_camas.sql` crea las tablas de habitaciones y camas, y registra las 24 habitaciones con sus 48 camas disponibles.
 
 La API de camas permite consultar todas las camas, filtrar por estado con `GET /api/camas?estado=disponible`, consultar una cama con `GET /api/camas/:id` y actualizar su estado con `PATCH /api/camas/:id/estado` enviando, por ejemplo, `{ "estado": "ocupado" }`. Los estados válidos son `disponible`, `ocupado` y `bloqueado`.
+
+La API `POST /api/asignaciones` recibe `estudianteId` y `camaId`, valida y bloquea la cama dentro de una transacción, registra la asignación activa y la marca como ocupada. `GET /api/asignaciones/:id` consulta una asignación. El script `008_enforce_single_active_assignment.sql` añade la restricción de una sola asignación activa por cama; ejecútalo después del script de camas.
 
 ### Scripts
 

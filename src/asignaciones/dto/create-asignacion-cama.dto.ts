@@ -14,8 +14,4 @@ export class CreateAsignacionCamaDto {
   @IsOptional()
   @IsDateString()
   fechaAsignacion?: string;
-
-  @IsOptional()
-  @IsDateString()
-  fechaFinalizacion?: string;
 }
