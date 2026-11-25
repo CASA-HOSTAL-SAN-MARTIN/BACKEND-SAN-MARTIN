@@ -166,7 +166,17 @@ El script `009_create_auth.sql` crea usuarios, roles y su relación muchos a muc
 
 El endpoint para crear solicitudes (`POST /api/solicitudes`) permanece público. Consultar solicitudes, gestionar aspirantes y lista de espera requiere `ADMIN_SISTEMA` o `COORDINACION_BIENESTAR`; contratos y pagos requieren `ADMIN_SISTEMA`, `ADMIN_FUNDACION` o `CONTABILIDAD`; asignaciones requieren `ADMIN_SISTEMA`, `COORDINACION_BIENESTAR`, `ADMIN_FUNDACION` o `MONITORA`. Consultar camas requiere autenticación; actualizar su estado está limitado a administración. Esta matriz es inicial porque la issue no contiene una matriz de permisos completa.
 
-Los valores guardados en `usuarios.password_hash` deben ser hashes bcrypt, nunca contraseñas en texto plano. La issue define login, logout y consulta de identidad, pero no el alta ni la recuperación de cuentas; la creación y asignación de usuarios debe realizarse por el proceso administrativo definido por el equipo.
+Los valores guardados en `usuarios.password_hash` son hashes bcrypt; las contraseñas nunca se almacenan en texto plano. Después de ejecutar el esquema, crea el primer administrador con `npm run auth:bootstrap-admin` desde una terminal interactiva. El comando solicita correo y contraseña oculta, y se niega a crear una cuenta si ya existe un `ADMIN_SISTEMA`. A partir de ese momento, un administrador autenticado puede crear cuentas con `POST /api/usuarios` y asignarles uno o varios roles. El alta devuelve únicamente el identificador, correo, roles y estado; no expone el hash. No hay flujo de recuperación de contraseña definido en esta issue.
+
+Ejemplo de alta (enviar el token del administrador en `Authorization: Bearer <token>`):
+
+```json
+{
+  "correo": "contabilidad@casaestudiantil.co",
+  "contrasena": "una-clave-de-al-menos-12",
+  "roles": ["CONTABILIDAD"]
+}
+```
 
 ### Scripts
 
