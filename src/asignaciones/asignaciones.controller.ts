@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -10,9 +10,15 @@ import {
 import { CreateAsignacionCamaDto } from './dto/create-asignacion-cama.dto';
 import { AsignacionCama } from './entities/asignacion-cama.entity';
 import { AsignacionesService } from './asignaciones.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Asignaciones')
 @Controller('api')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR, Role.ADMIN_FUNDACION, Role.MONITORA)
 export class AsignacionesController {
   constructor(private readonly asignacionesService: AsignacionesService) {}
 

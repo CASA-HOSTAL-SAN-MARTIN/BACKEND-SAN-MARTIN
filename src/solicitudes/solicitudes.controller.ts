@@ -5,11 +5,16 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateSolicitudDto } from './dto/create-solicitud.dto';
 import { Solicitud } from './entities/solicitud.entity';
 import { SolicitudesService } from './solicitudes.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Solicitudes')
 @Controller('api/solicitudes')
@@ -24,6 +29,8 @@ export class SolicitudesController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
   @ApiOperation({ summary: 'Consultar las solicitudes registradas' })
   @ApiOkResponse({ type: Solicitud, isArray: true })
   findAll(): Promise<Solicitud[]> {
@@ -31,6 +38,8 @@ export class SolicitudesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
   @ApiOperation({ summary: 'Consultar una solicitud por identificador' })
   @ApiOkResponse({ type: Solicitud })
   findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Solicitud> {

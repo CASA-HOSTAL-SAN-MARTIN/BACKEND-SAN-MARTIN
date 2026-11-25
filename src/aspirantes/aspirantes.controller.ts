@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -17,9 +18,15 @@ import { AspiranteResponseDto } from './dto/aspirante-response.dto';
 import { CreateAspiranteDto } from './dto/create-aspirante.dto';
 import { UpdateAspiranteDto } from './dto/update-aspirante.dto';
 import { AspirantesService } from './aspirantes.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Aspirantes')
 @Controller('api/aspirantes')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
 export class AspirantesController {
   constructor(private readonly aspirantesService: AspirantesService) {}
 

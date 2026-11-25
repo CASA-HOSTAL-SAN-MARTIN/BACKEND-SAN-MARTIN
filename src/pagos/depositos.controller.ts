@@ -1,12 +1,18 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateDepositoDto } from './dto/create-deposito.dto';
 import { Pago } from './entities/pago.entity';
 import { TipoPago } from './enums/tipo-pago.enum';
 import { PagosService } from './pagos.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Depósitos')
 @Controller('api/depositos')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_SISTEMA, Role.ADMIN_FUNDACION, Role.CONTABILIDAD)
 export class DepositosController {
   constructor(private readonly pagosService: PagosService) {}
 

@@ -6,15 +6,22 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateContratoDto } from './dto/create-contrato.dto';
 import { UpdateContratoDto } from './dto/update-contrato.dto';
 import { Contrato } from './entities/contrato.entity';
 import { ContratosService } from './contratos.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Contratos')
 @Controller('api/contratos')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_SISTEMA, Role.ADMIN_FUNDACION, Role.CONTABILIDAD)
 export class ContratosController {
   constructor(private readonly contratosService: ContratosService) {}
 
