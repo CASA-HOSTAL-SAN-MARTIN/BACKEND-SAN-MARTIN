@@ -151,6 +151,7 @@ mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/005_cre
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/006_create_pagos.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/007_create_camas.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/008_enforce_single_active_assignment.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/009_create_auth.sql
 ```
 
 Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tablas. El script `007_create_camas.sql` crea las tablas de habitaciones y camas, y registra las 24 habitaciones con sus 48 camas disponibles.
@@ -158,6 +159,24 @@ Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tab
 La API de camas permite consultar todas las camas, filtrar por estado con `GET /api/camas?estado=disponible`, consultar una cama con `GET /api/camas/:id` y actualizar su estado con `PATCH /api/camas/:id/estado` enviando, por ejemplo, `{ "estado": "ocupado" }`. Los estados válidos son `disponible`, `ocupado` y `bloqueado`.
 
 La API `POST /api/asignaciones` recibe `estudianteId` y `camaId`, valida y bloquea la cama dentro de una transacción, registra la asignación activa y la marca como ocupada. `GET /api/asignaciones/:id` consulta una asignación. El script `008_enforce_single_active_assignment.sql` añade la restricción de una sola asignación activa por cama; ejecútalo después del script de camas.
+
+### Autenticación y acceso por roles
+
+El script `009_create_auth.sql` crea usuarios, roles y su relación muchos a muchos. Para iniciar sesión se envía `POST /api/auth/login` con `{ "correo": "...", "contrasena": "..." }`; la respuesta incluye `accessToken` de tipo Bearer y los roles asociados. `GET /api/auth/me` devuelve la identidad y los roles actuales. `POST /api/auth/logout` invalida todos los tokens activos de esa cuenta incrementando su versión. Los tokens también expiran según `JWT_EXPIRES_IN`, y la cuenta y sus roles se vuelven a validar en cada solicitud protegida.
+
+El endpoint para crear solicitudes (`POST /api/solicitudes`) permanece público. Consultar solicitudes, gestionar aspirantes y lista de espera requiere `ADMIN_SISTEMA` o `COORDINACION_BIENESTAR`; contratos y pagos requieren `ADMIN_SISTEMA`, `ADMIN_FUNDACION` o `CONTABILIDAD`; asignaciones requieren `ADMIN_SISTEMA`, `COORDINACION_BIENESTAR`, `ADMIN_FUNDACION` o `MONITORA`. Consultar camas requiere autenticación; actualizar su estado está limitado a administración. Esta matriz es inicial porque la issue no contiene una matriz de permisos completa.
+
+Los valores guardados en `usuarios.password_hash` son hashes bcrypt; las contraseñas nunca se almacenan en texto plano. Después de ejecutar el esquema, crea el primer administrador con `npm run auth:bootstrap-admin` desde una terminal interactiva. El comando solicita correo y contraseña oculta, y se niega a crear una cuenta si ya existe un `ADMIN_SISTEMA`. A partir de ese momento, un administrador autenticado puede crear cuentas con `POST /api/usuarios` y asignarles uno o varios roles. El alta devuelve únicamente el identificador, correo, roles y estado; no expone el hash. No hay flujo de recuperación de contraseña definido en esta issue.
+
+Ejemplo de alta (enviar el token del administrador en `Authorization: Bearer <token>`):
+
+```json
+{
+  "correo": "contabilidad@casaestudiantil.co",
+  "contrasena": "una-clave-de-al-menos-12",
+  "roles": ["CONTABILIDAD"]
+}
+```
 
 ### Scripts
 

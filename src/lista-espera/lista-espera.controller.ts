@@ -6,15 +6,22 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateEntradaListaEsperaDto } from './dto/create-entrada-lista-espera.dto';
 import { UpdateEntradaListaEsperaDto } from './dto/update-entrada-lista-espera.dto';
 import { EntradaListaEspera } from './entities/entrada-lista-espera.entity';
 import { ListaEsperaService } from './lista-espera.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../common/enums/roles.enum';
 
 @ApiTags('Lista de espera')
 @Controller('api/lista-espera')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
 export class ListaEsperaController {
   constructor(private readonly listaEsperaService: ListaEsperaService) {}
 
