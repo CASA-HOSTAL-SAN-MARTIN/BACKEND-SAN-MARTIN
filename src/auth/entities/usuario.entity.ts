@@ -4,21 +4,37 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Rol } from './rol.entity';
+import { Solicitud } from '../../solicitudes/entities/solicitud.entity';
 
 @Entity('usuarios')
 export class Usuario {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ length: 150, unique: true })
+  @Column({ length: 150, unique: true, nullable: true })
   correo!: string;
 
-  @Column({ name: 'password_hash', length: 60, select: false })
-  passwordHash!: string;
+  @Column({ name: 'numero_documento', type: 'varchar', length: 30, unique: true, nullable: true })
+  numeroDocumento!: string | null;
+
+  @Column({ name: 'password_hash', type: 'varchar', length: 60, nullable: true, select: false })
+  passwordHash!: string | null;
+
+  @Column({ name: 'password_setup_token_hash', type: 'char', length: 64, nullable: true, select: false })
+  passwordSetupTokenHash!: string | null;
+
+  @Column({ name: 'password_setup_token_expires_at', type: 'datetime', precision: 6, nullable: true, select: false })
+  passwordSetupTokenExpiresAt!: Date | null;
+
+  @OneToOne(() => Solicitud, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'solicitud_id', referencedColumnName: 'id' })
+  solicitud!: Solicitud | null;
 
   @Column({ name: 'activo', type: 'boolean', default: true })
   activo!: boolean;

@@ -9,7 +9,7 @@ export class CreateUsuarioDto {
   correo!: string;
 
   @IsString()
-  @MinLength(12)
+  @MinLength(9)
   @MaxLength(72)
   contrasena!: string;
 
