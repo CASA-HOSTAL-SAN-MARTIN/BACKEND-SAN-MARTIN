@@ -5,6 +5,8 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Patch,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -15,6 +17,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../common/enums/roles.enum';
+import { UpdateSolicitudEstadoDto } from './dto/update-solicitud-estado.dto';
+import { Request } from 'express';
+
+interface AuthenticatedRequest extends Request {
+  user: { id: string };
+}
 
 @ApiTags('Solicitudes')
 @Controller('api/solicitudes')
@@ -37,6 +45,15 @@ export class SolicitudesController {
     return this.solicitudesService.findAll();
   }
 
+  @Get('mia')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ASPIRANTE_RESIDENTE)
+  @ApiOperation({ summary: 'Consultar el estado de la solicitud propia del aspirante autenticado' })
+  @ApiOkResponse({ type: Solicitud })
+  findMine(@Req() request: AuthenticatedRequest): Promise<Solicitud> {
+    return this.solicitudesService.findMine(request.user.id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
@@ -44,5 +61,17 @@ export class SolicitudesController {
   @ApiOkResponse({ type: Solicitud })
   findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Solicitud> {
     return this.solicitudesService.findOne(id);
+  }
+
+  @Patch(':id/estado')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN_SISTEMA, Role.COORDINACION_BIENESTAR)
+  @ApiOperation({ summary: 'Actualizar el estado de revisión de una solicitud' })
+  @ApiOkResponse({ type: Solicitud })
+  updateStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateSolicitudEstadoDto,
+  ): Promise<Solicitud> {
+    return this.solicitudesService.updateStatus(id, dto);
   }
 }
