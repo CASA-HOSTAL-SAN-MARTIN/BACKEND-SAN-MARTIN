@@ -17,7 +17,7 @@ describe('AuthService', () => {
   let queryBuilder: jest.Mocked<Pick<SelectQueryBuilder<Usuario>,
     'addSelect' | 'leftJoinAndSelect' | 'where' | 'getOne'>>;
   let jwtService: jest.Mocked<Pick<JwtService, 'signAsync'>>;
-  let mailService: jest.Mocked<Pick<MailService, 'sendPasswordSetup'>>;
+  let mailService: jest.Mocked<Pick<MailService, 'sendPasswordSetup' | 'sendApplicationReceived'>>;
 
   const user = {
     id: 'user-1',
@@ -46,7 +46,10 @@ describe('AuthService', () => {
       save: jest.fn(),
     };
     jwtService = { signAsync: jest.fn().mockResolvedValue('signed.jwt.token') };
-    mailService = { sendPasswordSetup: jest.fn().mockResolvedValue(undefined) };
+    mailService = {
+      sendPasswordSetup: jest.fn().mockResolvedValue(undefined),
+      sendApplicationReceived: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AuthService(
       repository as unknown as Repository<Usuario>,
       jwtService as unknown as JwtService,
@@ -130,10 +133,32 @@ describe('AuthService', () => {
     }));
   });
 
+  it('does not allow a pending applicant to configure a password', async () => {
+    const account = {
+      ...user,
+      activo: false,
+      passwordHash: null,
+      solicitud: { id: 'request-1', estado: 'pendiente' },
+    };
+    repository.findOne.mockResolvedValue(account as Usuario);
+    await expect(service.setPassword({ token: 'setup-token', contrasena: 'long-valid-passphrase' }))
+      .rejects.toBeInstanceOf(UnauthorizedException);
+    expect(repository.save).not.toHaveBeenCalled();
+  });
+
   it('sends password setup links without exposing whether the account exists', async () => {
     repository.findOne.mockResolvedValue(null);
     const genericMessage = await service.requestPasswordReset({ identificador: 'missing@example.com' });
     expect(genericMessage.message).toContain('Si la cuenta existe');
+    expect(mailService.sendPasswordSetup).not.toHaveBeenCalled();
+  });
+
+  it('does not send a password setup link to an applicant whose request is pending', async () => {
+    repository.findOne.mockResolvedValue({
+      ...user,
+      solicitud: { id: 'request-1', estado: 'pendiente', nombres: 'María', apellidos: 'Gómez' },
+    } as Usuario);
+    await service.requestPasswordReset({ identificador: 'CC-12345' });
     expect(mailService.sendPasswordSetup).not.toHaveBeenCalled();
   });
 

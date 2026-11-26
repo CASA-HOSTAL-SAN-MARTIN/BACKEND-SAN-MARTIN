@@ -13,6 +13,10 @@ export class Solicitud {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Index({ unique: true })
+  @Column({ length: 18 })
+  radicado!: string;
+
   @Column({ length: 100 })
   nombres!: string;
 

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomBytes } from 'node:crypto';
 import { DataSource, Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
 import { Rol } from '../auth/entities/rol.entity';
@@ -12,6 +13,7 @@ import { Usuario } from '../auth/entities/usuario.entity';
 import { Role } from '../common/enums/roles.enum';
 import { CreateSolicitudDto } from './dto/create-solicitud.dto';
 import { UpdateSolicitudEstadoDto } from './dto/update-solicitud-estado.dto';
+import { ConsultaEstadoSolicitudDto } from './dto/consulta-estado-solicitud.dto';
 import { Solicitud } from './entities/solicitud.entity';
 import { EstadoSolicitud } from './enums/estado-solicitud.enum';
 
@@ -26,7 +28,7 @@ export class SolicitudesService {
 
   async create(
     createSolicitudDto: CreateSolicitudDto,
-  ): Promise<Solicitud & { accountSetupEmailSent: boolean }> {
+  ): Promise<Solicitud & { confirmationEmailSent: boolean }> {
     const correo = createSolicitudDto.correo.trim().toLowerCase();
     const numeroDocumento = createSolicitudDto.numeroDocumento.trim();
     const created = await this.dataSource.transaction(async (manager) => {
@@ -48,10 +50,20 @@ export class SolicitudesService {
       });
       if (!role) throw new InternalServerErrorException('No está configurado el rol de aspirante.');
 
+      let radicado = '';
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        radicado = `SM-${new Date().getFullYear()}-${randomBytes(5).toString('hex').toUpperCase()}`;
+        const existingRadicado = await solicitudes.findOne({ where: { radicado } });
+        if (!existingRadicado) break;
+        radicado = '';
+      }
+      if (!radicado) throw new InternalServerErrorException('No fue posible generar el radicado de la solicitud.');
+
       const solicitud = await solicitudes.save(solicitudes.create({
         ...createSolicitudDto,
         correo,
         numeroDocumento,
+        radicado,
       }));
       const usuario = usuarios.create({
         correo,
@@ -65,14 +77,21 @@ export class SolicitudesService {
         roles: [role],
       });
       await usuarios.save(usuario);
-      return { solicitud, usuario };
+      return solicitud;
     });
 
-    const accountSetupEmailSent = await this.authService.sendInitialSetup(
-      created.usuario.id,
-      `${created.solicitud.nombres} ${created.solicitud.apellidos}`,
+    const confirmationEmailSent = await this.authService.sendApplicationReceived(
+      created.correo,
+      `${created.nombres} ${created.apellidos}`,
+      created.radicado,
     );
-    return { ...created.solicitud, accountSetupEmailSent };
+    return { ...created, confirmationEmailSent };
+  }
+
+  async checkPublicStatus({ radicado, correo }: ConsultaEstadoSolicitudDto) {
+    const solicitud = await this.solicitudesRepository.findOne({ where: { radicado, correo } });
+    if (!solicitud) throw new NotFoundException('No encontramos una solicitud con esos datos. Verifica el radicado y el correo.');
+    return { radicado: solicitud.radicado, estado: solicitud.estado, createdAt: solicitud.createdAt };
   }
 
   findAll(): Promise<Solicitud[]> {
@@ -96,7 +115,7 @@ export class SolicitudesService {
     return usuario.solicitud;
   }
 
-  async updateStatus(id: string, { estado }: UpdateSolicitudEstadoDto): Promise<Solicitud> {
+  async updateStatus(id: string, { estado }: UpdateSolicitudEstadoDto): Promise<Solicitud & { accountSetupEmailSent?: boolean }> {
     const solicitud = await this.findOne(id);
     if (solicitud.estado === estado) return solicitud;
 
@@ -111,6 +130,11 @@ export class SolicitudesService {
       throw new ConflictException(`No se puede cambiar una solicitud de ${solicitud.estado} a ${estado}.`);
     }
     solicitud.estado = estado;
-    return this.solicitudesRepository.save(solicitud);
+    const updated = await this.solicitudesRepository.save(solicitud);
+    if (estado === EstadoSolicitud.APROBADA) {
+      const accountSetupEmailSent = await this.authService.sendApprovedApplicantSetup(updated);
+      return { ...updated, accountSetupEmailSent };
+    }
+    return updated;
   }
 }

@@ -133,6 +133,8 @@ La API queda disponible en `http://localhost:3000` y la documentación en `http:
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Conexión a la base de datos |
 | `JWT_SECRET` | Clave para firmar los tokens |
 | `JWT_EXPIRES_IN` | Duración del token |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE` | Servidor SMTP y conexión segura |
+| `MAIL_USER`, `MAIL_PASS`, `MAIL_FROM` | Cuenta SMTP, contraseña de aplicación y remitente |
 | `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_ENDPOINT` | Almacenamiento externo de archivos |
 
 > ⚠️ Nunca subas el archivo `.env` al repositorio.
@@ -153,9 +155,14 @@ mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/007_cre
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/008_enforce_single_active_assignment.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/009_create_auth.sql
 mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/010_link_applicants_and_password_setup.sql
+mysql -h localhost -P 3306 -u root -p casa_estudiantil < database/schema/011_add_solicitud_radicado.sql
 ```
 
-Los scripts son idempotentes y pueden ejecutarse nuevamente sin duplicar las tablas. El script `007_create_camas.sql` crea las tablas de habitaciones y camas, y registra las 24 habitaciones con sus 48 camas disponibles.
+El script `011_add_solicitud_radicado.sql` asigna un radicado público a las solicitudes existentes y agrega un índice único. Ejecútalo una sola vez en bases que ya tienen aplicados los scripts anteriores.
+
+Al enviar una solicitud, la persona recibe un radicado con formato `SM-AAAA-XXXXXXXXXX` por correo. Puede consultar el estado con `POST /api/solicitudes/consultar-estado`, enviando radicado y correo; la respuesta contiene solo radicado, estado y fecha. Al aprobar la solicitud, el sistema envía el enlace de un solo uso para activar el acceso. Una cuenta ligada a una solicitud pendiente no puede configurar contraseña ni iniciar sesión.
+
+Los scripts iniciales `001` a `010` pueden ejecutarse nuevamente sin duplicar las tablas. El script `007_create_camas.sql` crea las tablas de habitaciones y camas, y registra las 24 habitaciones con sus 48 camas disponibles.
 
 La API de camas permite consultar todas las camas, filtrar por estado con `GET /api/camas?estado=disponible`, consultar una cama con `GET /api/camas/:id` y actualizar su estado con `PATCH /api/camas/:id/estado` enviando, por ejemplo, `{ "estado": "ocupado" }`. Los estados válidos son `disponible`, `ocupado` y `bloqueado`.
 

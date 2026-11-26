@@ -10,6 +10,7 @@ import { Usuario } from './entities/usuario.entity';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { MailService } from './mail.service';
+import { Solicitud } from '../solicitudes/entities/solicitud.entity';
 
 @Injectable()
 export class AuthService {
@@ -77,10 +78,20 @@ export class AuthService {
     };
   }
 
-  async sendInitialSetup(usuarioId: string, name: string): Promise<boolean> {
-    const usuario = await this.usuarios.findOne({ where: { id: usuarioId } });
+  async sendApplicationReceived(email: string, name: string, radicado: string): Promise<boolean> {
+    try {
+      await this.mailService.sendApplicationReceived(email, name, radicado);
+      return true;
+    } catch {
+      this.logger.warn('No se pudo enviar la confirmación de recepción de solicitud.');
+      return false;
+    }
+  }
+
+  async sendApprovedApplicantSetup(solicitud: Solicitud): Promise<boolean> {
+    const usuario = await this.usuarios.findOne({ where: { solicitud: { id: solicitud.id } } });
     if (!usuario) return false;
-    return this.sendPasswordSetup(usuario, name);
+    return this.sendPasswordSetup(usuario, `${solicitud.nombres} ${solicitud.apellidos}`, true);
   }
 
   async requestPasswordReset(dto: RequestPasswordResetDto): Promise<{ message: string }> {
@@ -90,7 +101,7 @@ export class AuthService {
       where: [{ correo }, { numeroDocumento: identificador }],
       relations: { solicitud: true },
     });
-    if (usuario) {
+    if (usuario && (!usuario.solicitud || usuario.solicitud.estado === 'aprobada')) {
       const name = usuario.solicitud
         ? `${usuario.solicitud.nombres} ${usuario.solicitud.apellidos}`
         : usuario.correo;
@@ -109,8 +120,12 @@ export class AuthService {
         passwordSetupTokenHash: tokenHash,
         passwordSetupTokenExpiresAt: MoreThan(new Date()),
       },
+      relations: { solicitud: true },
     });
     if (!usuario) throw new UnauthorizedException('El enlace expiró o ya fue utilizado');
+    if (usuario.solicitud && usuario.solicitud.estado !== 'aprobada') {
+      throw new UnauthorizedException('La solicitud aún no ha sido aprobada.');
+    }
 
     usuario.passwordHash = await hash(dto.contrasena, 12);
     usuario.passwordSetupTokenHash = null;
@@ -121,13 +136,17 @@ export class AuthService {
     return { message: 'Contraseña configurada correctamente. Ya puedes iniciar sesión.' };
   }
 
-  private async sendPasswordSetup(usuario: Usuario, name: string): Promise<boolean> {
+  private async sendPasswordSetup(usuario: Usuario, name: string, approved = false): Promise<boolean> {
     const token = randomBytes(32).toString('hex');
     usuario.passwordSetupTokenHash = this.hashToken(token);
     usuario.passwordSetupTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await this.usuarios.save(usuario);
     try {
-      await this.mailService.sendPasswordSetup(usuario.correo, name, token);
+      if (approved) {
+        await this.mailService.sendApprovedApplicantSetup(usuario.correo, name, token);
+      } else {
+        await this.mailService.sendPasswordSetup(usuario.correo, name, token);
+      }
       return true;
     } catch {
       usuario.passwordSetupTokenHash = null;

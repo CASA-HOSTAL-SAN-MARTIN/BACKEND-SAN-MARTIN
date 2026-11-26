@@ -17,7 +17,7 @@ describe('SolicitudesService', () => {
   let usuarioTx: jest.Mocked<Pick<Repository<Usuario>, 'findOne' | 'create' | 'save'>>;
   let rolesTx: jest.Mocked<Pick<Repository<Rol>, 'findOne'>>;
   let usuarioRepository: jest.Mocked<Pick<Repository<Usuario>, 'findOne'>>;
-  let authService: jest.Mocked<Pick<AuthService, 'sendInitialSetup'>>;
+  let authService: jest.Mocked<Pick<AuthService, 'sendApplicationReceived' | 'sendApprovedApplicantSetup'>>;
 
   const dto: CreateSolicitudDto = {
     nombres: 'María',
@@ -33,6 +33,7 @@ describe('SolicitudesService', () => {
     const solicitud = {
       ...dto,
       id: 'b6f2e7fb-1d9a-4d7d-9bc5-1a15e72f21cb',
+      radicado: 'SM-2026-5A4D93BC1F',
       estado: EstadoSolicitud.PENDIENTE,
     } as Solicitud;
     const usuario = { id: 'user-1', solicitud, correo: dto.correo } as Usuario;
@@ -60,7 +61,10 @@ describe('SolicitudesService', () => {
       transaction: jest.fn(async (operation: (value: typeof manager) => unknown) => operation(manager)),
       getRepository: jest.fn().mockReturnValue(usuarioRepository),
     };
-    authService = { sendInitialSetup: jest.fn().mockResolvedValue(true) };
+    authService = {
+      sendApplicationReceived: jest.fn().mockResolvedValue(true),
+      sendApprovedApplicantSetup: jest.fn().mockResolvedValue(true),
+    };
     service = new SolicitudesService(
       repository as unknown as Repository<Solicitud>,
       dataSource as unknown as DataSource,
@@ -68,11 +72,11 @@ describe('SolicitudesService', () => {
     );
   });
 
-  it('creates a request and a linked aspirant account transactionally, then emails setup access', async () => {
+  it('creates a request and a linked inactive aspirant account, then emails the radicado', async () => {
     await expect(service.create(dto)).resolves.toMatchObject({
       id: expect.any(String),
       estado: EstadoSolicitud.PENDIENTE,
-      accountSetupEmailSent: true,
+      confirmationEmailSent: true,
     });
     expect(usuarioTx.create).toHaveBeenCalledWith(expect.objectContaining({
       correo: dto.correo,
@@ -81,7 +85,8 @@ describe('SolicitudesService', () => {
       activo: false,
       roles: [expect.objectContaining({ nombre: Role.ASPIRANTE_RESIDENTE })],
     }));
-    expect(authService.sendInitialSetup).toHaveBeenCalledWith('user-1', 'María Gómez');
+    expect(authService.sendApplicationReceived).toHaveBeenCalledWith(dto.correo, 'María Gómez', 'SM-2026-5A4D93BC1F');
+    expect(authService.sendApprovedApplicantSetup).not.toHaveBeenCalled();
   });
 
   it('does not create an account for a duplicate document', async () => {
@@ -114,6 +119,22 @@ describe('SolicitudesService', () => {
     });
   });
 
+  it('allows public status lookup with both radicado and email and returns minimal data', async () => {
+    const solicitud = { id: 'request-1', radicado: 'SM-2026-5A4D93BC1F', correo: dto.correo, estado: EstadoSolicitud.EN_REVISION, createdAt: new Date() } as Solicitud;
+    repository.findOne.mockResolvedValue(solicitud);
+    await expect(service.checkPublicStatus({ radicado: solicitud.radicado, correo: dto.correo })).resolves.toEqual({
+      radicado: solicitud.radicado,
+      estado: EstadoSolicitud.EN_REVISION,
+      createdAt: solicitud.createdAt,
+    });
+    expect(repository.findOne).toHaveBeenCalledWith({ where: { radicado: solicitud.radicado, correo: dto.correo } });
+  });
+
+  it('does not reveal a request when the radicado or email do not match', async () => {
+    repository.findOne.mockResolvedValue(null);
+    await expect(service.checkPublicStatus({ radicado: 'missing', correo: dto.correo })).rejects.toBeInstanceOf(NotFoundException);
+  });
+
   it('moves a pending request into review and then to a terminal decision', async () => {
     const solicitud = { id: 'request-1', estado: EstadoSolicitud.PENDIENTE } as Solicitud;
     repository.findOne.mockResolvedValue(solicitud);
@@ -122,6 +143,7 @@ describe('SolicitudesService', () => {
     expect(solicitud.estado).toBe(EstadoSolicitud.EN_REVISION);
     await service.updateStatus('request-1', { estado: EstadoSolicitud.APROBADA });
     expect(solicitud.estado).toBe(EstadoSolicitud.APROBADA);
+    expect(authService.sendApprovedApplicantSetup).toHaveBeenCalledWith(solicitud);
   });
 
   it('rejects invalid state transitions', async () => {

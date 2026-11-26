@@ -18,6 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '../common/enums/roles.enum';
 import { UpdateSolicitudEstadoDto } from './dto/update-solicitud-estado.dto';
+import { ConsultaEstadoSolicitudDto } from './dto/consulta-estado-solicitud.dto';
 import { Request } from 'express';
 
 interface AuthenticatedRequest extends Request {
@@ -32,8 +33,15 @@ export class SolicitudesController {
   @Post()
   @ApiOperation({ summary: 'Registrar una solicitud de cupo' })
   @ApiCreatedResponse({ type: Solicitud })
-  create(@Body() createSolicitudDto: CreateSolicitudDto): Promise<Solicitud> {
+  create(@Body() createSolicitudDto: CreateSolicitudDto): Promise<Solicitud & { confirmationEmailSent: boolean }> {
     return this.solicitudesService.create(createSolicitudDto);
+  }
+
+  @Post('consultar-estado')
+  @ApiOperation({ summary: 'Consultar el estado usando el radicado y el correo registrado' })
+  @ApiOkResponse({ description: 'Devuelve únicamente el radicado, el estado y la fecha de recepción.' })
+  checkPublicStatus(@Body() dto: ConsultaEstadoSolicitudDto) {
+    return this.solicitudesService.checkPublicStatus(dto);
   }
 
   @Get()
