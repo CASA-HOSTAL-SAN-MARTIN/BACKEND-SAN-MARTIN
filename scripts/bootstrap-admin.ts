@@ -6,6 +6,7 @@ import { DataSource } from 'typeorm';
 import { Rol } from '../src/auth/entities/rol.entity';
 import { Usuario } from '../src/auth/entities/usuario.entity';
 import { Role } from '../src/common/enums/roles.enum';
+import { Solicitud } from '../src/solicitudes/entities/solicitud.entity';
 
 function askSecret(label: string): Promise<string> {
   if (!stdin.isTTY || typeof stdin.setRawMode !== 'function') {
@@ -66,11 +67,11 @@ async function main(): Promise<void> {
     throw new Error('Ingresa un correo válido de hasta 150 caracteres.');
   }
 
-  const contrasena = await askSecret('Contraseña (mínimo 12 caracteres): ');
+  const contrasena = await askSecret('Contraseña (mínimo 9 caracteres): ');
   const confirmacion = await askSecret('Repite la contraseña: ');
   if (contrasena !== confirmacion) throw new Error('Las contraseñas no coinciden.');
-  if (contrasena.length < 12 || Buffer.byteLength(contrasena, 'utf8') > 72) {
-    throw new Error('La contraseña debe tener al menos 12 caracteres y máximo 72 bytes UTF-8.');
+  if (contrasena.length < 9 || Buffer.byteLength(contrasena, 'utf8') > 72) {
+    throw new Error('La contraseña debe tener al menos 9 caracteres y máximo 72 bytes UTF-8.');
   }
 
   const dataSource = new DataSource({
@@ -80,7 +81,7 @@ async function main(): Promise<void> {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    entities: [Usuario, Rol],
+    entities: [Usuario, Rol, Solicitud],
     synchronize: false,
   });
 

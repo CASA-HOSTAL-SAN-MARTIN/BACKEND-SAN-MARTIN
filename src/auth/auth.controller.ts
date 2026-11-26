@@ -4,6 +4,8 @@ import { Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { SetPasswordDto } from './dto/set-password.dto';
 
 interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -17,6 +19,16 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('password/recovery')
+  requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post('password/setup')
+  setPassword(@Body() dto: SetPasswordDto) {
+    return this.authService.setPassword(dto);
   }
 
   @Post('logout')
